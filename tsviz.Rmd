@@ -1,0 +1,411 @@
+---
+title: "Time Series Vizualizer"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+runtime: shiny
+---
+<style type="text/css">
+
+.navbar {  
+    background-color: #4682B4;
+    border-color: #4682B4;
+    font-family: Cambria;
+    font-color: white;
+}
+
+.navbar-brand {
+  font-size: 35px;
+}
+.sidebar {
+   background-color: white;
+   font-family: Cambria;
+   color: #4682B4;
+   ont-color: #4682B4;
+   font-size: 18px;
+  }
+
+  
+.chart-title {  /* chart_title  */
+   font-size: 20px;
+   font-family: Cambria;
+}
+
+
+
+</style>
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(lubridate)
+library(tidyverse)
+library(dygraphs)
+library(highcharter)
+library(plotly)
+library(ggplot2)
+library(stats)
+library(TSstudio)
+library(zoo)
+library(xts)
+library(DT)
+library(ggpubr)
+```
+
+
+
+```{r Data, include=FALSE}
+### Univariate
+univariate <- as.xts(EURO_Brent)
+
+names(univariate) <- c("crude_oil_prices")
+
+univariate_date <- convertIndex(univariate,"Date") |> as.data.frame() |> rownames_to_column() |> rename(Time=rowname) |> mutate(Time=as.Date(Time))
+
+### Multivariate
+
+multivariate_ts <- ts(data = US_indicators[, c("Vehicle Sales",
+                                               "Unemployment Rate")],
+                      start = c(1976,1),
+                      frequency = 12)
+
+
+
+multivariate <- xts(x = US_indicators[,c("Vehicle Sales",
+                                         "Unemployment Rate")],
+                    frequency = 12,
+                    order.by = US_indicators$Date)
+multivariate_date <- multivariate |> 
+  as.data.frame() |> 
+  rownames_to_column() |> 
+  rename(Time=rowname) |> 
+  mutate(Time=floor_date(as.Date(Time),"month"))
+
+names(multivariate) <- c("Vehicle Sales", "Unemployment Rate")
+
+multivariate <- convertIndex(multivariate,"yearmon")
+
+
+```
+
+
+Data
+======================================================================
+
+## Sidebar {.sidebar data-width="375"}
+
+This application offers a comparative analysis of different visualization tools and packages specifically tailored for visualizing time series data. Explore and contrast the features, and effectiveness of these visualization tools to gain insights into their strengths and capabilities in depicting time series information.
+
+__EURO_Brent__ data from __TSstudio__ package is used for the Univariate comparison.
+
+__US_indicators__ data from __TSstudio__ package is used for the Multivariate comparison.
+
+__stats__, __TSstudio__, __dygraphs__, __highcharter__, __zoo__, __xts__, __ggplot2__, __plotly__ packages are compared against each other.
+
+
+Application author: [Md Shehab Khan](https://shehabk2000.wixsite.com/shehabk)
+
+
+Reference: [Hands-On Time Series Analysis with R by Rami Krispin ](https://www.packtpub.com/product/hands-on-time-series-analysis-with-r/9781788629157)
+
+
+Row {data-height="425"}
+-------------------------------------
+    
+### Univariate Data {data-width="950"}
+    
+```{r}
+
+univariate_dt <- 
+univariate |> as.data.frame() |> rownames_to_column()
+
+names(univariate_dt) <- c("Time", 'Crude oil price')
+
+renderDataTable( univariate_dt, autoHideNavigation = T)
+
+```
+ 
+### INFO
+<p style="font-family: Cambria, sans-serif; font-size: 18px;">
+ The univariate series is a xts object with 1 variable and 392 observations<br>
+ <b>Frequency:</b> Monthly <br>
+ <b>Start time:</b> May 1987 <br>
+ <b>End time:</b> Dec 2019 <br>
+ </p>
+Row {data-height="425"}
+-------------------------------------
+    
+### Multivariate Data {data-width="950"}
+    
+```{r}
+multivariate_dt <- 
+multivariate |> as.data.frame() |> rownames_to_column()
+
+names(multivariate_dt) <- c("Time", "Vehicle Sales", "Unemployment Rate")
+
+renderDataTable( multivariate_dt, autoHideNavigation = T)
+```
+    
+### INFO
+<p style="font-family: Cambria, sans-serif; font-size: 18px;">
+ The multivariate series is a xts object with 2 variables and 528 observations<br>
+ <b>Frequency:</b> Monthly <br>
+ <b>Start time:</b> Jan 1976 <br>
+ <b>End time:</b> Dec 2019 <br>
+ </p>
+
+Univariate
+======================================================================
+
+## Sidebar {.sidebar data-width="375"}
+
+From the comparison, we can see there are two types of graph: Interactive & Static.
+
+For papers, journals or any scientific writing, static graphs are the better option.  __stats__, __zoo__, __xts__, and __ggplot2__ are preferred packages for static graphs.
+
+For HTML objects, or shiny applications, interactive graphs work best. You can use __TSstudio__, __dygraphs__, __highcharter__, and __plotly__ to create interactive graphs.
+
+NB: These graphs are made using the basic setting of every package. You can add flare to every single one of them.
+
+__Personal Opinion:__ <br>
+<ul>
+ <li>For static graph, use __ggplot2__. </li>
+ <li>For interactive graph, use __dygraphs__. </li>
+</ul>
+
+Row
+-------------------------------------
+    
+### stats
+    
+```{r}
+
+plot.ts(EURO_Brent,
+        main = "Crude Oil Prices: Brent - Europe:  1987 - 2019",
+        ylab = "Price (Dollars per Barrel)",
+        xlab = "Time"
+)
+
+```
+ 
+### TSstudio
+    
+```{r}
+ts_plot(univariate,
+        title = "Crude Oil Prices: Brent - Europe:  1987 - 2019",
+        Ytitle =  "Price (Dollars per Barrel)",
+        Xtitle = "Time")
+``` 
+
+Row
+-------------------------------------
+    
+### dygraphs
+    
+```{r}
+dygraph(univariate,
+        main = "Crude Oil Prices: Brent - Europe:  1987 - 2019",
+        ylab = "Price (Dollars per Barrel)",
+        xlab = "Time") 
+```
+    
+### highcharter
+
+```{r}
+hchart(univariate_date, "line", hcaes(x = Time, 
+                         y = crude_oil_prices)) %>%  
+  hc_title(text = "Crude Oil Prices: Brent - Europe:  1987 - 2019") %>%  
+  hc_yAxis(title = list(text = "Price (Dollars per Barrel)")) %>%  
+  hc_xAxis(title = list(text = "Time"))
+```
+
+Row
+-------------------------------------
+    
+### zoo
+    
+```{r}
+plot.zoo(univariate,
+         main = "Crude Oil Prices: Brent - Europe:  1987 - 2019",
+         ylab = "Price (Dollars per Barrel)",
+         xlab = "Time")
+```
+ 
+### xts
+    
+```{r}
+plot.xts(univariate, 
+         main = "Crude Oil Prices: Brent - Europe",
+         ylab = "Price (Dollars per Barrel)",
+         xlab = "Time"
+)
+``` 
+
+Row
+-------------------------------------
+    
+### ggplot2
+    
+```{r}
+ggplot(univariate_date) +
+  aes(x = Time, y = crude_oil_prices)+
+  geom_line()+
+  labs(title = "Crude Oil Prices: Brent - Europe:  1987 - 2019" ,x = "Time", y="Price (Dollars per Barrel)")+
+  theme_minimal()
+```
+    
+### plotly
+
+```{r}
+plot_ly(univariate_date, type = 'scatter', mode = 'lines') |> 
+  add_trace(x = ~Time, y = ~crude_oil_prices) |> 
+  layout(title = 'Crude Oil Prices: Brent - Europe:  1987 - 2019',
+         xaxis = list(title = 'Time'),
+         yaxis = list(title = 'Price (Dollars per Barrel)'),
+         showlegend = F)
+
+```
+
+
+
+Multivariate
+======================================================================
+
+## Sidebar {.sidebar data-width="375"}
+
+From the comparison, we can see there are two types of graph: Interactive & Static. And also, overlapped and separated.
+
+For papers, journals or any scientific writing, static graphs are the better option.  __stats__, __zoo__, __xts__, and __ggplot2__ are preferred packages for static graphs. All static graphs are separated.
+
+For HTML objects, or shiny applications, interactive graphs work best. You can use __TSstudio__, __dygraphs__, __highcharter__, and __plotly__ to create interactive graphs. Among them, __plotly__ and __dygraphs__ are overlapped, and __TSstudio__ and __highcharter__ are separated.
+
+
+__Personal Opinion:__ <br>
+<ul>
+ <li>For static graph, use __xts__ (If you can ignore the mandatory date range given by xts on the top right). </li>
+ <li>For interactive graph, use __dygraphs__. </li>
+</ul>
+
+Row
+-------------------------------------
+    
+### stats
+    
+```{r}
+plot.ts(multivariate_ts,
+plot.type = "multiple",
+main = "US Monthly Vehicle Sales vs. Unemployment Rate",
+xlab = "Time")
+```
+ 
+### TSstudio
+    
+```{r}
+ts_plot(multivariate,
+title = "US Monthly Vehicle Sales vs. Unemployment Rate",
+type = "multiple",
+Xtitle = "Time")
+``` 
+
+Row
+-------------------------------------
+    
+### dygraphs
+    
+```{r}
+dygraph(multivariate,
+main = "US Monthly Vehicle Sales vs. Unemployment Rate") %>%
+dyAxis("y", label = "Vehicle Sales") %>%
+dyAxis("y2", label = "Unemployment Rate") %>%
+dySeries("Vehicle Sales", axis = 'y', color = "blue") %>%
+dySeries("Unemployment Rate", axis = 'y2', color = "red") %>%
+dyLegend(width = 400)
+
+```
+    
+### highcharter
+
+```{r}
+hchart(multivariate_ts)
+```
+
+Row
+-------------------------------------
+    
+### zoo
+    
+```{r}
+plot.zoo(multivariate,plot.type = "multiple",
+         main = "US Monthly Vehicle Sales vs. Unemployment Rate",
+         xlab = "Time")
+```
+ 
+### xts
+    
+```{r}
+plot.xts(multivariate,
+multi.panel = 2,
+yaxis.same = FALSE,
+minor.ticks = FALSE,
+main = "Monthly Vehicle Sales and Unemployment Rate in the US")
+``` 
+
+Row
+-------------------------------------
+    
+### ggplot2
+    
+```{r}
+gg_1 <- 
+ggplot(multivariate_date) +
+  aes(x = Time, y = `Vehicle Sales`)+
+  geom_line()+
+  labs(title = "Monthly Vehicle Sales and Unemployment Rate in the US" ,x = "Time", y="Vehicle Sales")+
+  theme_minimal()
+
+gg_2 <- 
+ggplot(multivariate_date) +
+  aes(x = Time, y = `Unemployment Rate`)+
+  geom_line()+
+  labs(x = "Time", y="Unemployment Rate")+
+  theme_minimal()
+
+ggarrange(gg_1, gg_2 + font("x.text", size = 10),
+                    ncol = 1, nrow = 2)
+```
+    
+### plotly
+
+```{r}
+
+fig <- plot_ly()
+
+fig <- fig %>% add_trace(x = ~multivariate_date$Time, y = ~multivariate_date$`Vehicle Sales`, name = "Vehicle Sales", type = 'scatter', mode = 'lines')
+
+ay <- list(
+  tickfont = list(color = "red"),
+  overlaying = "y",
+  side = "right",
+  title = "Unemployment Rate")
+
+fig <- fig %>% add_trace(x = ~multivariate_date$Time, y = ~multivariate_date$`Unemployment Rate`, name = "Unemployment Rate", yaxis = "y2", type = 'scatter', mode = 'lines')
+
+fig <- fig %>% layout(
+  title = "US Monthly Vehicle Sales vs. Unemployment Rate", yaxis2 = ay,
+  xaxis = list(title="Time"),
+  yaxis = list(title="Vehicle Sales")
+)%>%
+  layout(plot_bgcolor='#e5ecf6',
+          xaxis = list(
+            zerolinecolor = '#ffff',
+            zerolinewidth = 2,
+            gridcolor = 'ffff'),
+          yaxis = list(
+            zerolinecolor = '#ffff',
+            zerolinewidth = 2,
+            gridcolor = 'ffff')
+          )
+
+fig
+
+```
